@@ -34,8 +34,24 @@ impl App {
             .expect("regular font");
         let font_fa_b = assets.get_font("fa-solid-900.ttf").expect("fa font");
 
-        let theme_bytes = std::fs::read("resources/cobalt.tmTheme")
-            .or_else(|_| std::fs::read("resources/dark-rust.tmTheme"))
+        let exe_dir = std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(|p| p.to_path_buf()))
+            .unwrap_or_default();
+        let theme_bytes = std::fs::read(exe_dir.join("resources/cobalt.tmTheme"))
+            .or_else(|_| std::fs::read(exe_dir.join("resources/dark-rust.tmTheme")))
+            .or_else(|_| {
+                std::fs::read(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/resources/cobalt.tmTheme"
+                ))
+            })
+            .or_else(|_| {
+                std::fs::read(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/resources/dark-rust.tmTheme"
+                ))
+            })
             .expect("theme file not found in resources/");
 
         let code_font = Arc::new(Font::from_bytes(&font_reg_b).expect("regular font"));
