@@ -1,0 +1,21 @@
+{
+  "row_height":       52.0,
+  "indent":           32.0,
+  "pad_left":         24.0,
+  "arrow_pad":        24.0,
+  "arrow_size":       14.0,
+  "chevron_w":        30.0,
+  "min_width":        200.0,
+  "max_depth":        2,
+  "font_size":        16.0,
+  "file_size":        13.0,
+  "char_w_folder":    10.80,
+  "char_w_file":      9.60,
+  "scroll_speed":     1.00,
+  "scroll_speed_max": 50.0,
+  "color_bg":         "#000000",
+  "color_text":       "#ffffff",
+  "color_file":       "#888888",
+  "color_crumb":      "#555555",
+  "max_slots":        120
+}

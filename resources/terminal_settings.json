@@ -1,0 +1,12 @@
+{
+  "font_size":   14.0,
+  "line_height": 1.450,
+  "pad_x":       10.0,
+  "pad_y":       8.0,
+  "scrollback":  10000,
+  "col_text":    "#D2D2D2",
+  "col_prompt":  "#5AB4FF",
+  "col_input":   "#FFFFFF",
+  "col_cursor":  "#5AB4FF",
+  "col_error":   "#FF5A5A"
+}

@@ -1,0 +1,289 @@
+================================================================================
+  CONCEPT
+================================================================================
+
+RampStack is a code editing IDE built on Quartz. It composes three external
+crates — editor, explorer, terminal — into a single fullscreen application
+with a resizable panel layout. Two layout modes are supported: side-by-side
+(explorer | editor | terminal) and stacked (explorer | editor over terminal).
+Panel dividers are draggable. Settings persist to a single settings.json file.
+
+================================================================================
+  CANVAS VARS
+================================================================================
+
+ratio_a       f32   Explorer right edge as a fraction of canvas width.
+ratio_b       f32   Editor right edge as a fraction of canvas width (side-by-side).
+ratio_c       f32   Editor bottom edge as a fraction of panel height (stacked).
+drag_which    u8    0 = none, 1 = dragging divider A, 2 = dragging divider B/C.
+layout_mode   u8    0 = side-by-side, 1 = stacked.
+min_explorer  f32   Minimum explorer width in pixels. Kept in sync with
+                    ExplorerSettings::min_width each tick.
+
+================================================================================
+  CONSTANTS  (src/constants.rs)
+================================================================================
+
+INIT_EXPLORER_RATIO  f32   Initial explorer width as fraction of canvas. 0.18.
+INIT_TERMINAL_RATIO  f32   Initial terminal width as fraction of canvas. 0.28.
+INIT_CW              f32   Initial canvas width used for layout setup. 1920.0.
+INIT_CH              f32   Initial canvas height used for layout setup. 1080.0.
+
+================================================================================
+  PREFERENCES  (src/preferences.rs)
+================================================================================
+
+COL_APP_BG         Color   Application background. Black.
+COL_TOPBAR_BG      Color   Topbar background. Black.
+COL_BORDER         Color   Topbar separator and divider colour. White at alpha 80.
+TOPBAR_H           f32     Height of the topbar in pixels. 44.0.
+SETTINGS_JSON_PATH &str    Path to the unified settings file. "settings.json".
+
+================================================================================
+  INTERNAL TYPES  (src/rampstack/)
+================================================================================
+
+--------------------------------------------------------------------------------
+  rampstack/project.rs
+--------------------------------------------------------------------------------
+
+resolve_project_root() -> String
+  Reads RAMP_PROJECT env var. Canonicalises to an absolute path if possible.
+  Falls back to "." if the var is unset or empty.
+
+pick_initial_file(root) -> Option<String>
+  Searches the project root for a sensible first file to open in the editor.
+  Tries in order: src/main.rs, src/lib.rs, main.rs, lib.rs, README.md,
+  readme.md, index.js, index.ts. Falls back to the first file found by
+  read_dir. Returns None if the root is empty.
+
+--------------------------------------------------------------------------------
+  rampstack/settings.rs
+--------------------------------------------------------------------------------
+
+Serialization helpers for the unified settings.json that stores editor,
+explorer, and terminal settings in a single file. Used by logic/settings.rs.
+
+  color_to_hex(c) -> String     Formats Color as "#RRGGBB".
+  parse_hex_color(hex) -> Option<Color>
+  find_val(src, key) -> Option<&str>   Extracts a JSON value by key name.
+  get_f / get_b / get_us / get_col     Typed wrappers over find_val.
+
+  serialize_editor(s)   -> String   Produces the "editor" JSON block.
+  parse_editor_into(text, s)         Reads editor fields into an existing struct.
+
+  serialize_explorer(s) -> String   Produces the "explorer" JSON block.
+  parse_explorer_into(text, s)
+
+  serialize_terminal(s) -> String   Produces the "terminal" JSON block.
+  parse_terminal_into(text, s)
+
+  save(ed, ex, term)
+    Writes a single settings.json containing all three sections.
+
+  load(ed, ex, term)
+    Reads settings.json and parses all three sections into the given structs.
+    Missing keys are left at their defaults.
+
+  ensure_file()
+    Creates settings.json with default values if it does not already exist.
+
+--------------------------------------------------------------------------------
+  rampstack/windows.rs
+--------------------------------------------------------------------------------
+
+Shared types and image helpers for the chrome layout. Used by both
+objects/windows_obj.rs and logic/windows_obj.rs.
+
+  DIV_W      f32   Divider width in pixels. 2.0.
+  HIT_HALF   f32   Half the hit-test zone around a divider. 5.0.
+  MIN_EXPLORER / MIN_EDITOR / MIN_TERMINAL  f32   Minimum panel widths.
+  ICON_SIZE / ICON_PAD / ICON_GAP           f32   Layout-mode icon sizing.
+  LOGO_H / LOGO_W / LOGO_PAD                f32   Logo sizing and offset.
+
+  Panels  (struct)
+    explorer  (f32, f32, f32, f32)   (x, y, w, h) of the explorer panel.
+    editor    (f32, f32, f32, f32)
+    terminal  (f32, f32, f32, f32)
+
+  divider_image_v(h) -> Image   1px-wide vertical divider image.
+  divider_image_h(w) -> Image   1px-tall horizontal divider image.
+  icon_rects(cw) -> [(f32,f32); 2]
+    Returns positions of the two layout-mode icon slots in the topbar.
+  hit(mx, my, x, y, w, h) -> bool   Simple AABB hit test.
+
+================================================================================
+  OBJECTS  (src/objects/)
+================================================================================
+
+Each file has a single pub fn setup(cv: &mut Canvas, ...).
+Construction only — no events, no on_update.
+
+--------------------------------------------------------------------------------
+  objects/windows_obj.rs
+--------------------------------------------------------------------------------
+
+pub fn setup(cv, init_cw, init_ch, ratio_a, ratio_b)
+
+Builds all chrome GameObjects and sets all layout canvas vars.
+
+  app_bg
+    Full-canvas background fill. COL_APP_BG. layer -1.
+
+  topbar_bg
+    Topbar background fill. COL_TOPBAR_BG. layer 5.
+
+  topbar_sep
+    1px horizontal separator below topbar. COL_BORDER. layer 6.
+
+  topbar_logo
+    Logo image from resources/rampstacklogo.png. layer 7. Decorative only.
+
+  icon_stacked / icon_sidebyside
+    Layout-mode toggle icons, right side of topbar. layer 7.
+    Default: side-by-side selected (icon_sidebyside starts as selected).
+
+  divider_a
+    Vertical divider between explorer and editor. layer 10.
+
+  divider_b
+    Vertical divider between editor and terminal. Visible in side-by-side mode.
+    layer 10.
+
+  divider_c
+    Horizontal divider between editor and terminal. Visible in stacked mode.
+    Starts hidden (visible = false). layer 10.
+
+  Canvas vars set here:
+    ratio_a, ratio_b, ratio_c, drag_which, layout_mode, min_explorer
+
+================================================================================
+  LOGIC  (src/logic/)
+================================================================================
+
+--------------------------------------------------------------------------------
+  logic/windows_obj.rs
+--------------------------------------------------------------------------------
+
+Handles mouse interaction with dividers and layout-mode icons, and the per-tick
+update that repositions all chrome objects and returns panel bounds.
+
+  on_press(cv, mx, my) -> bool
+    If click is in topbar: checks icon hit tests, sets layout_mode, swaps
+    icon images, clears drag_which.
+    If click is on divider A hit zone: sets drag_which = 1.
+    If click is on divider B (mode 0) or C (mode 1) hit zone: sets drag_which = 2.
+    Returns true if a drag was started or a mode button was pressed.
+
+  on_release(cv)
+    Clears drag_which to 0.
+
+  on_move(cv, mx, my)
+    If drag_which == 0: no-op.
+    If drag_which == 1: updates ratio_a, clamped between min_explorer and
+      (ratio_b - editor_min) in side-by-side, or (1 - editor_min) in stacked.
+    If drag_which == 2, mode 0: updates ratio_b, clamped between
+      (ratio_a + editor_min) and (1 - terminal_min).
+    If drag_which == 2, mode 1: updates ratio_c, clamped between
+      editor_min and (1 - terminal_min / panel_h).
+
+  update(cv) -> Panels
+    Called every tick from lib.rs on_update.
+    Clamps ratio_b, then clamps ratio_a based on clamped ratio_b.
+    Resizes app_bg, topbar_bg, topbar_sep if canvas size changed.
+    Repositions layout icons.
+    Repositions and resizes divider_a.
+    In side-by-side mode:
+      Shows divider_b at ratio_b position.
+      Hides divider_c.
+      Returns Panels with three side-by-side regions.
+    In stacked mode:
+      Hides divider_b.
+      Shows divider_c at ratio_c height.
+      Returns Panels with explorer full-height, editor top-right, terminal bottom-right.
+
+--------------------------------------------------------------------------------
+  logic/settings.rs  (standalone — no matching object)
+--------------------------------------------------------------------------------
+
+Thin wrappers over rampstack::settings. Called from lib.rs during init.
+
+  ensure_file()   Creates settings.json if missing.
+  load(ed, ex, term)   Reads and parses settings.json into the given structs.
+  save(ed, ex, term)   Writes all three sections to settings.json.
+
+================================================================================
+  LIB  (src/lib.rs)
+================================================================================
+
+Module declarations and App struct. ramp::run! at the bottom.
+
+  App::new(context, assets) -> Scene
+
+    Font loading
+      JetBrainsMono-Bold.ttf     gutter font
+      JetBrainsMono-Regular.ttf  code font and terminal font
+      fa-solid-900.ttf           icon font for explorer
+
+    Theme loading
+      Tries resources/cobalt.tmTheme, falls back to resources/dark-rust.tmTheme.
+
+    Settings
+      logic::settings::ensure_file()
+      logic::settings::load() into EditorSettings, ExplorerSettings, TermSettings.
+
+    Layout
+      Computes init_split_a, init_split_b, panel_top from constants and ratios.
+      Resolves project_root and initial_file via rampstack::project.
+
+    Chrome
+      objects::windows_obj::setup — builds all chrome objects and canvas vars.
+
+    Editor
+      Editor::new with computed bounds and loaded settings.
+      ed.mount(cv) + ed.register_callbacks(cv).
+
+    Explorer
+      Configures ex_settings with position, size, project_root.
+      Calls explorer::mount, captures ExplorerComponent.
+      Writes min_explorer canvas var from ExplorerSettings::min_width.
+
+    Terminal
+      Configures term_settings with offset_x, offset_y.
+      Calls terminal::mount with run_command callback and cwd Shared<String>.
+
+    Input handlers
+      on_mouse_press  → logic::windows_obj::on_press
+      on_mouse_release → logic::windows_obj::on_release
+      on_mouse_move   → logic::windows_obj::on_move
+
+    Update loop
+      Syncs min_explorer canvas var from ExplorerSettings::min_width.
+      Calls logic::windows_obj::update to get Panels.
+      Passes panel bounds to ex_resize, ed.set_bounds, ts.offset_x/y.
+
+  ramp::run! passes context and assets into App::new.
+
+================================================================================
+  MAIN  (src/main.rs)
+================================================================================
+
+Always exactly this. Never changes between projects.
+
+  Reads first CLI argument and sets RAMP_PROJECT env var.
+  Calls main::maverick_main() under the wasm32 cfg gate.
+
+================================================================================
+  RESOURCES
+================================================================================
+
+  resources/cobalt.tmTheme or dark-rust.tmTheme   Syntax theme for editor.
+  resources/rampstacklogo.png                     Topbar logo (decorative).
+  resources/selected_sidebyside.png               Layout icon — selected state.
+  resources/unselected_sidebyside.png             Layout icon — unselected state.
+  resources/selected_stacked.png                  Layout icon — selected state.
+  resources/unselected_stacked.png                Layout icon — unselected state.
+  resources/JetBrainsMono-Bold.ttf                Gutter and explorer bold font.
+  resources/JetBrainsMono-Regular.ttf             Code and terminal font.
+  resources/fa-solid-900.ttf                      FontAwesome for explorer icons.
+  settings.json  (written at runtime)             Persisted user settings.
