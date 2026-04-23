@@ -2,7 +2,7 @@
 
 > A fullscreen code editing IDE built on the Quartz framework — composing editor, explorer, and terminal into one fluid workspace.
 
-![RampStack Studio](resources/studio.png)
+![RampStack Studio](./resources/studio.png)
 
 ---
 
