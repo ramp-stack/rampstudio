@@ -875,7 +875,7 @@ dependencies = [
  "flowmango",
  "image 0.25.10",
  "quartz",
- "ramp2",
+ "ramp2 0.1.6",
  "tokio",
 ]
 
@@ -986,7 +986,7 @@ dependencies = [
  "flowmango",
  "image 0.25.10",
  "quartz",
- "ramp2",
+ "ramp2 0.1.7",
  "tokio",
 ]
 
@@ -1096,7 +1096,7 @@ name = "flowmango"
 version = "0.1.0"
 dependencies = [
  "image 0.25.10",
- "prism2",
+ "prism2 0.1.6",
  "quartz",
 ]
 
@@ -1872,6 +1872,52 @@ dependencies = [
 [[package]]
 name = "maverick_os"
 version = "0.3.6"
+dependencies = [
+ "android-activity",
+ "android_logger",
+ "anyanymap",
+ "arboard",
+ "async-trait",
+ "block",
+ "block2 0.6.2",
+ "cli-clipboard",
+ "dirs",
+ "dispatch2",
+ "downcast-rs 2.0.2",
+ "env_logger",
+ "hex",
+ "image 0.25.10",
+ "imageproc",
+ "include_dir",
+ "jni 0.21.1",
+ "libc",
+ "log",
+ "ndk-context",
+ "nsvg",
+ "objc2 0.6.4",
+ "objc2-app-kit 0.3.2",
+ "objc2-av-foundation",
+ "objc2-core-foundation",
+ "objc2-core-graphics",
+ "objc2-core-media",
+ "objc2-core-video",
+ "objc2-foundation 0.3.2",
+ "objc2-ui-kit 0.3.2",
+ "objc2-user-notifications 0.3.2",
+ "rand 0.9.4",
+ "raw-window-handle",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "tokio",
+ "winit",
+]
+
+[[package]]
+name = "maverick_os"
+version = "0.3.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ca4405174a309b957f98ff05254602524ee8743ab384ad7be0cd189e0cb74e7d"
 dependencies = [
  "android-activity",
  "android_logger",
@@ -3128,7 +3174,24 @@ dependencies = [
  "nsvg",
  "prism_proc",
  "uuid",
- "wgpu_canvas",
+ "wgpu_canvas 5.0.8",
+]
+
+[[package]]
+name = "prism2"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33376f9536f67658720bd15edba3d8756855095a3764eb284a5ed1601ed76902"
+dependencies = [
+ "anyanymap",
+ "downcast-rs 2.0.2",
+ "dyn-clone",
+ "image 0.25.10",
+ "include_dir",
+ "nsvg",
+ "prism_proc",
+ "uuid",
+ "wgpu_canvas 5.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -3208,11 +3271,11 @@ name = "quartz"
 version = "0.1.0"
 dependencies = [
  "image 0.25.10",
- "prism2",
- "ramp2",
+ "prism2 0.1.6",
+ "ramp2 0.1.6",
  "rand 0.8.6",
  "rodio",
- "wgpu_canvas",
+ "wgpu_canvas 5.0.8",
 ]
 
 [[package]]
@@ -3273,9 +3336,20 @@ checksum = "f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf"
 name = "ramp2"
 version = "0.1.6"
 dependencies = [
- "maverick_os",
- "prism2",
- "wgpu_canvas",
+ "maverick_os 0.3.6",
+ "prism2 0.1.6",
+ "wgpu_canvas 5.0.8",
+]
+
+[[package]]
+name = "ramp2"
+version = "0.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "193c8081192f380532a8ea1b76374a356121a4b0aad6d8367dddee8f2b7e0908"
+dependencies = [
+ "maverick_os 0.3.7",
+ "prism2 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "wgpu_canvas 5.0.8 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -3287,7 +3361,7 @@ dependencies = [
  "flowmango",
  "image 0.25.10",
  "quartz",
- "ramp2",
+ "ramp2 0.1.6",
  "terminal",
  "tokio",
 ]
@@ -4162,7 +4236,7 @@ dependencies = [
  "libc",
  "portable-pty",
  "quartz",
- "ramp2",
+ "ramp2 0.1.7",
  "rand 0.9.4",
  "rgb",
  "rodio",
@@ -4914,6 +4988,19 @@ dependencies = [
 [[package]]
 name = "wgpu_canvas"
 version = "5.0.8"
+dependencies = [
+ "bytemuck",
+ "fontdue",
+ "image 0.25.10",
+ "lazy_static",
+ "wgpu",
+]
+
+[[package]]
+name = "wgpu_canvas"
+version = "5.0.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "37deb8b3ff4088be909bea9666d1f58c50a95ba8300d5facd8a340465da43298"
 dependencies = [
  "bytemuck",
  "fontdue",
