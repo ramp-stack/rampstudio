@@ -19,9 +19,28 @@ use terminal::{mount as terminal_mount, run_command};
 use ramp::prism;
 use ramp::prism::Context;
 
+pub(crate) fn resource_path(rel: &str) -> String {
+    // Installed/release layout: resources sit next to the executable.
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            let candidate = dir.join(rel);
+            if candidate.exists() {
+                return candidate.to_string_lossy().into_owned();
+            }
+        }
+    }
+    // Dev layout: resources live next to Cargo.toml, not in target/.
+    let dev = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(rel);
+    if dev.exists() {
+        return dev.to_string_lossy().into_owned();
+    }
+    rel.to_string()
+}
+
 pub struct App;
 
 impl App {
+    #[allow(clippy::new_ret_no_self)]
     pub fn new(context: &mut Context, assets: Assets) -> Scene {
         let mut scene = Scene::new(context, CanvasMode::Fullscreen, 1);
         let layer_id = LayerId(0);
