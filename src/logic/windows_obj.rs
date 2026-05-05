@@ -14,10 +14,12 @@ fn update_icon_images(cv: &mut Canvas, mode: u8) {
         "resources/unselected_sidebyside.png"
     };
     if let Some(o) = cv.get_game_object_mut("icon_stacked") {
-        o.set_image(load_image_sized(stacked_path, ICON_SIZE, ICON_SIZE));
+        let bytes = std::fs::read(stacked_path).unwrap_or_default();
+        o.set_image(load_image_sized(&bytes, ICON_SIZE, ICON_SIZE));
     }
     if let Some(o) = cv.get_game_object_mut("icon_sidebyside") {
-        o.set_image(load_image_sized(sidebyside_path, ICON_SIZE, ICON_SIZE));
+        let bytes = std::fs::read(sidebyside_path).unwrap_or_default();
+        o.set_image(load_image_sized(&bytes, ICON_SIZE, ICON_SIZE));
     }
 }
 
@@ -143,7 +145,6 @@ pub fn update(cv: &mut Canvas) -> Panels {
     let right_x = a + DIV_W;
     let right_w = cw - right_x;
 
-    // Background
     if let Some(o) = cv.get_game_object_mut("app_bg") {
         if o.size != (cw, ch) {
             o.size = (cw, ch);
@@ -151,7 +152,6 @@ pub fn update(cv: &mut Canvas) -> Panels {
         }
     }
 
-    // Topbar
     if let Some(o) = cv.get_game_object_mut("topbar_bg") {
         if (o.size.0 - cw).abs() > 0.5 {
             o.size = (cw, TOPBAR_H);
@@ -166,12 +166,10 @@ pub fn update(cv: &mut Canvas) -> Panels {
         o.position = (0.0, TOPBAR_H);
     }
 
-    // Icons — reposition only; images swapped on click in on_press
     let rects = icon_rects(cw);
     if let Some(o) = cv.get_game_object_mut("icon_stacked")    { o.position = (rects[0].0, rects[0].1); }
     if let Some(o) = cv.get_game_object_mut("icon_sidebyside") { o.position = (rects[1].0, rects[1].1); }
 
-    // Divider A
     if let Some(o) = cv.get_game_object_mut("divider_a") {
         o.position = (a, panel_top);
         if (o.size.1 - panel_h).abs() > 0.5 {
