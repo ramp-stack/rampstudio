@@ -12,11 +12,11 @@ use flowmango::LayerId;
 use flowmango::Scene;
 use quartz::CanvasMode;
 use quartz::{Arc, Font, Shared};
+use ramp::prism;
+use ramp::prism::Context;
 use terminal::preferences::TermSettings;
 use terminal::tabbar::TAB_H;
 use terminal::{mount as terminal_mount, run_command};
-use ramp::prism;
-use ramp::prism::Context;
 
 pub struct App;
 
@@ -25,16 +25,11 @@ impl App {
         let mut scene = Scene::new(context, CanvasMode::Fullscreen, 1);
         let layer_id = LayerId(0);
 
-        let font_bold_b = std::fs::read("resources/JetBrainsMono-Bold.ttf")
-            .expect("bold font not found in resources/");
-        let font_reg_b = std::fs::read("resources/JetBrainsMono-Regular.ttf")
-            .expect("regular font not found in resources/");
-        let font_fa_b = std::fs::read("resources/fa-solid-900.ttf")
-            .expect("fa font not found in resources/");
+        let font_bold_b = include_bytes!("../resources/JetBrainsMono-Bold.ttf").to_vec();
+        let font_reg_b = include_bytes!("../resources/JetBrainsMono-Regular.ttf").to_vec();
+        let font_fa_b = include_bytes!("../resources/fa-solid-900.ttf").to_vec();
 
-        let theme_bytes = std::fs::read("resources/cobalt.tmTheme")
-            .or_else(|_| std::fs::read("resources/dark-rust.tmTheme"))
-            .expect("theme file not found in resources/");
+        let theme_bytes = include_bytes!("../resources/cobalt.tmTheme").to_vec();
 
         let code_font = Arc::new(Font::from_bytes(&font_reg_b).expect("regular font"));
         let gutter_font = Arc::new(Font::from_bytes(&font_bold_b).expect("bold font"));
