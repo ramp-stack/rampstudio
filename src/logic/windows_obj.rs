@@ -1,6 +1,7 @@
-use quartz::{Canvas, load_image_sized};
+use quartz::{Arc, Font, Canvas};
 use crate::preferences::*;
 use crate::rampstack::windows::*;
+use crate::objects::windows_obj::ph_text;
 
 fn update_icon_images(cv: &mut Canvas, mode: u8) {
     let stacked_path = if mode == 1 {
@@ -15,17 +16,55 @@ fn update_icon_images(cv: &mut Canvas, mode: u8) {
     };
     if let Some(o) = cv.get_game_object_mut("icon_stacked") {
         let bytes = std::fs::read(stacked_path).unwrap_or_default();
-        o.set_image(load_image_sized(&bytes, ICON_SIZE, ICON_SIZE));
+        o.set_image(quartz::load_image_sized(&bytes, ICON_SIZE, ICON_SIZE));
     }
     if let Some(o) = cv.get_game_object_mut("icon_sidebyside") {
         let bytes = std::fs::read(sidebyside_path).unwrap_or_default();
-        o.set_image(load_image_sized(&bytes, ICON_SIZE, ICON_SIZE));
+        o.set_image(quartz::load_image_sized(&bytes, ICON_SIZE, ICON_SIZE));
     }
 }
 
-pub fn on_press(cv: &mut Canvas, mx: f32, my: f32) -> bool {
+pub fn refresh_sidebar_icons(cv: &mut Canvas, active: u8, ph_light: &Arc<Font>) {
+    let files_col = if active == SIDEBAR_FILES {
+        SIDEBAR_ICON_COLOR_ACTIVE
+    } else {
+        SIDEBAR_ICON_COLOR
+    };
+    if let Some(o) = cv.get_game_object_mut("sidebar_icon_files") {
+        o.set_drawable(Box::new(ph_text(PH_FILES, SIDEBAR_ICON_SIZE, files_col, ph_light.clone())));
+    }
+    if let Some(o) = cv.get_game_object_mut("sidebar_icon_search") {
+        o.set_drawable(Box::new(ph_text(PH_SEARCH, SIDEBAR_ICON_SIZE, SIDEBAR_ICON_COLOR, ph_light.clone())));
+    }
+}
+
+pub fn on_press(cv: &mut Canvas, mx: f32, my: f32, ph_light: &Arc<Font>) -> bool {
+    let panel_top = TOPBAR_H + 1.0;
+
+    if mx <= SIDEBAR_W && my > panel_top {
+        let icon_x  = (SIDEBAR_W - SIDEBAR_ICON_SIZE) * 0.5;
+        let icon_y1 = panel_top + SIDEBAR_ICON_TOP;
+        let icon_y2 = icon_y1 + SIDEBAR_ICON_SIZE + SIDEBAR_ICON_GAP;
+
+        if hit(mx, my, icon_x, icon_y1, SIDEBAR_ICON_SIZE, SIDEBAR_ICON_SIZE) {
+            let current = cv.get_u8("sidebar_active");
+            let next = if current == SIDEBAR_FILES { SIDEBAR_NONE } else { SIDEBAR_FILES };
+            cv.set_var("sidebar_active", quartz::Value::from(next));
+            refresh_sidebar_icons(cv, next, ph_light);
+            if next == SIDEBAR_FILES {
+                cv.set_var("ratio_a", quartz::Value::from(INIT_EXPLORER_RATIO));
+            }
+            return true;
+        }
+        if hit(mx, my, icon_x, icon_y2, SIDEBAR_ICON_SIZE, SIDEBAR_ICON_SIZE) {
+            return true;
+        }
+        return true;
+    }
+
     let (cw, ch) = cv.canvas_size();
     let _ = ch;
+
     if my <= TOPBAR_H {
         let rects = icon_rects(cw);
         if hit(mx, my, rects[0].0, rects[0].1, ICON_SIZE, ICON_SIZE) {
@@ -113,12 +152,30 @@ pub fn on_move(cv: &mut Canvas, mx: f32, my: f32) {
     }
 }
 
-pub fn update(cv: &mut Canvas) -> Panels {
-    let (cw, ch)     = cv.canvas_size();
-    let panel_top    = TOPBAR_H + 1.0;
-    let panel_h      = ch - panel_top;
-    let mode         = cv.get_u8("layout_mode");
-    let min_explorer = cv.get_f32("min_explorer");
+pub fn update(cv: &mut Canvas, ph_light: &Arc<Font>) -> Panels {
+    let (cw, ch)       = cv.canvas_size();
+    let panel_top      = TOPBAR_H + 1.0;
+    let panel_h        = ch - panel_top;
+    let mode           = cv.get_u8("layout_mode");
+    let min_explorer   = cv.get_f32("min_explorer");
+    let sidebar_active = cv.get_u8("sidebar_active");
+    let drag_which     = cv.get_u8("drag_which");
+    let explorer_visible = sidebar_active == SIDEBAR_FILES;
+
+    if let Some(o) = cv.get_game_object_mut("sidebar_bg") {
+        o.position = (0.0, panel_top);
+        if (o.size.1 - panel_h).abs() > 0.5 {
+            o.size = (SIDEBAR_W, panel_h);
+            o.set_image(quartz::tint_overlay(SIDEBAR_W, panel_h, COL_SIDEBAR_BG));
+        }
+    }
+    if let Some(o) = cv.get_game_object_mut("sidebar_sep") {
+        o.position = (SIDEBAR_W, panel_top);
+        if (o.size.1 - panel_h).abs() > 0.5 {
+            o.size = (1.0, panel_h);
+            o.set_image(quartz::tint_overlay(1.0, panel_h, COL_BORDER));
+        }
+    }
 
     let rb = if mode == 0 {
         let raw     = cv.get_f32("ratio_b");
@@ -142,7 +199,19 @@ pub fn update(cv: &mut Canvas) -> Panels {
     cv.set_var("ratio_a", quartz::Value::from(ra));
     let a = (ra * cw).round();
 
-    let right_x = a + DIV_W;
+    let explorer_visible = if explorer_visible
+        && drag_which == 1
+        && a <= (min_ra * cw).round() + 40.0
+    {
+        cv.set_var("sidebar_active", quartz::Value::from(SIDEBAR_NONE));
+        refresh_sidebar_icons(cv, SIDEBAR_NONE, ph_light);
+        false
+    } else {
+        explorer_visible
+    };
+
+    let explorer_right = if explorer_visible { a } else { SIDEBAR_W };
+    let right_x = explorer_right + DIV_W;
     let right_w = cw - right_x;
 
     if let Some(o) = cv.get_game_object_mut("app_bg") {
@@ -171,6 +240,7 @@ pub fn update(cv: &mut Canvas) -> Panels {
     if let Some(o) = cv.get_game_object_mut("icon_sidebyside") { o.position = (rects[1].0, rects[1].1); }
 
     if let Some(o) = cv.get_game_object_mut("divider_a") {
+        o.visible  = explorer_visible;
         o.position = (a, panel_top);
         if (o.size.1 - panel_h).abs() > 0.5 {
             o.size = (DIV_W, panel_h);
@@ -180,6 +250,7 @@ pub fn update(cv: &mut Canvas) -> Panels {
 
     if mode == 0 {
         let b = (rb * cw).round();
+
         if let Some(o) = cv.get_game_object_mut("divider_b") {
             o.visible  = true;
             o.position = (b, panel_top);
@@ -190,10 +261,18 @@ pub fn update(cv: &mut Canvas) -> Panels {
         }
         if let Some(o) = cv.get_game_object_mut("divider_c") { o.visible = false; }
 
+        let (editor_x, editor_w, terminal_x, terminal_w) = if explorer_visible {
+            (right_x, b - right_x, b + DIV_W, cw - b - DIV_W)
+        } else {
+            let b2 = (rb * cw).round();
+            (SIDEBAR_W + DIV_W, b2 - SIDEBAR_W - DIV_W, b2 + DIV_W, cw - b2 - DIV_W)
+        };
+
         Panels {
-            explorer: (0.0,       panel_top, a,              panel_h),
-            editor:   (right_x,   panel_top, b - right_x,    panel_h),
-            terminal: (b + DIV_W, panel_top, cw - b - DIV_W, panel_h),
+            explorer: (SIDEBAR_W,  panel_top, a - SIDEBAR_W, panel_h),
+            editor:   (editor_x,   panel_top, editor_w,      panel_h),
+            terminal: (terminal_x, panel_top, terminal_w,    panel_h),
+            explorer_visible,
         }
     } else {
         let rc = {
@@ -218,9 +297,10 @@ pub fn update(cv: &mut Canvas) -> Panels {
 
         let tm_y = c_y + DIV_W;
         Panels {
-            explorer: (0.0,     panel_top, a,       panel_h),
-            editor:   (right_x, panel_top, right_w, c_y - panel_top),
-            terminal: (right_x, tm_y,      right_w, ch - tm_y),
+            explorer: (SIDEBAR_W, panel_top, a - SIDEBAR_W, panel_h),
+            editor:   (right_x,  panel_top,  right_w,       c_y - panel_top),
+            terminal: (right_x,  tm_y,       right_w,       ch - tm_y),
+            explorer_visible,
         }
     }
 }

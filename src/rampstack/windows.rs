@@ -18,9 +18,10 @@ pub const LOGO_W:   f32 = 80.0;
 pub const LOGO_PAD: f32 = 12.0;
 
 pub struct Panels {
-    pub explorer: (f32, f32, f32, f32),
-    pub editor:   (f32, f32, f32, f32),
-    pub terminal: (f32, f32, f32, f32),
+    pub explorer:         (f32, f32, f32, f32),
+    pub editor:           (f32, f32, f32, f32),
+    pub terminal:         (f32, f32, f32, f32),
+    pub explorer_visible: bool,
 }
 
 pub fn divider_image_v(h: f32) -> Image {

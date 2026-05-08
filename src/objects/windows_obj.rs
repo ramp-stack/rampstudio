@@ -1,10 +1,39 @@
-use quartz::{load_image_sized, tint_overlay};
+use quartz::{load_image_sized, tint_overlay, Arc, Font, Text, Span, Align, Color, Image};
 use crate::preferences::*;
 use crate::rampstack::windows::*;
 use flowmango::GameObject;
-use flowmango::Canvas;
+use quartz::Canvas;
 
-pub fn setup(cv: &mut Canvas, init_cw: f32, init_ch: f32, ratio_a: f32, ratio_b: f32) {
+fn read_image_sized(path: &str, w: f32, h: f32) -> Image {
+    let bytes = std::fs::read(path).expect(&format!("missing image: {}", path));
+    load_image_sized(&bytes, w, h)
+}
+
+pub fn ph_text(glyph: &str, size: f32, color: Color, font: Arc<Font>) -> Text {
+    Text::new(
+        vec![Span::new(
+            glyph.to_string(),
+            size,
+            Some(size * 1.2),
+            font,
+            color,
+            0.0,
+        )],
+        None,
+        Align::Center,
+        None,
+    )
+}
+
+pub fn setup(
+    cv:       &mut Canvas,
+    init_cw:  f32,
+    init_ch:  f32,
+    ratio_a:  f32,
+    ratio_b:  f32,
+    fa_solid: Arc<Font>,
+    ph_light: Arc<Font>,
+) {
     let split_a   = (init_cw * ratio_a).round();
     let split_b   = (init_cw * ratio_b).round();
     let panel_top = TOPBAR_H + 1.0;
@@ -22,21 +51,57 @@ pub fn setup(cv: &mut Canvas, init_cw: f32, init_ch: f32, ratio_a: f32, ratio_b:
         .position(0.0, TOPBAR_H).size(init_cw, 1.0).layer(6)
         .image(tint_overlay(init_cw, 1.0, COL_BORDER)).finish());
 
-    let logo_img = load_image_sized(include_bytes!("../../resources/rampstacklogo.png"), LOGO_W, LOGO_H);
-    let logo_y   = (TOPBAR_H - LOGO_H) * 0.5;
+    let logo_y = (TOPBAR_H - LOGO_H) * 0.5;
     cv.add_game_object("topbar_logo".into(), GameObject::build("topbar_logo")
         .position(LOGO_PAD, logo_y).size(LOGO_W, LOGO_H).layer(7)
-        .image(logo_img).finish());
+        .image(read_image_sized("resources/rampstacklogo.png", LOGO_W, LOGO_H))
+        .finish());
 
     let rects = icon_rects(init_cw);
     cv.add_game_object("icon_stacked".into(), GameObject::build("icon_stacked")
         .position(rects[0].0, rects[0].1).size(ICON_SIZE, ICON_SIZE).layer(7)
-        .image(load_image_sized(include_bytes!("../../resources/unselected_stacked.png"), ICON_SIZE, ICON_SIZE))
+        .image(read_image_sized("resources/unselected_stacked.png", ICON_SIZE, ICON_SIZE))
         .finish());
     cv.add_game_object("icon_sidebyside".into(), GameObject::build("icon_sidebyside")
         .position(rects[1].0, rects[1].1).size(ICON_SIZE, ICON_SIZE).layer(7)
-        .image(load_image_sized(include_bytes!("../../resources/selected_sidebyside.png"), ICON_SIZE, ICON_SIZE))
+        .image(read_image_sized("resources/selected_sidebyside.png", ICON_SIZE, ICON_SIZE))
         .finish());
+
+    cv.add_game_object("sidebar_bg".into(), GameObject::build("sidebar_bg")
+        .position(0.0, panel_top).size(SIDEBAR_W, panel_h).layer(4)
+        .image(tint_overlay(SIDEBAR_W, panel_h, COL_SIDEBAR_BG)).finish());
+
+    cv.add_game_object("sidebar_sep".into(), GameObject::build("sidebar_sep")
+        .position(SIDEBAR_W, panel_top).size(1.0, panel_h).layer(4)
+        .image(tint_overlay(1.0, panel_h, COL_BORDER)).finish());
+
+    let icon_x = (SIDEBAR_W - SIDEBAR_ICON_SIZE) * 0.5;
+
+    let mut file_obj = GameObject::build("sidebar_icon_files")
+        .position(icon_x, panel_top + SIDEBAR_ICON_TOP)
+        .size(SIDEBAR_ICON_SIZE, SIDEBAR_ICON_SIZE)
+        .layer(8)
+        .finish();
+    file_obj.set_drawable(Box::new(ph_text(
+        PH_FILES,
+        SIDEBAR_ICON_SIZE,
+        SIDEBAR_ICON_COLOR,
+        ph_light.clone(),
+    )));
+    cv.add_game_object("sidebar_icon_files".into(), file_obj);
+
+    let mut search_obj = GameObject::build("sidebar_icon_search")
+        .position(icon_x, panel_top + SIDEBAR_ICON_TOP + SIDEBAR_ICON_SIZE + SIDEBAR_ICON_GAP)
+        .size(SIDEBAR_ICON_SIZE, SIDEBAR_ICON_SIZE)
+        .layer(8)
+        .finish();
+    search_obj.set_drawable(Box::new(ph_text(
+        PH_SEARCH,
+        SIDEBAR_ICON_SIZE,
+        SIDEBAR_ICON_COLOR,
+        ph_light.clone(),
+    )));
+    cv.add_game_object("sidebar_icon_search".into(), search_obj);
 
     let mut div_a = GameObject::build("divider_a")
         .position(split_a, panel_top).size(DIV_W, panel_h).layer(10).finish();
@@ -57,10 +122,11 @@ pub fn setup(cv: &mut Canvas, init_cw: f32, init_ch: f32, ratio_a: f32, ratio_b:
     div_c.visible = false;
     cv.add_game_object("divider_c".into(), div_c);
 
-    cv.set_var("ratio_a",      quartz::Value::from(ratio_a));
-    cv.set_var("ratio_b",      quartz::Value::from(ratio_b));
-    cv.set_var("ratio_c",      quartz::Value::from(init_ratio_c));
-    cv.set_var("drag_which",   quartz::Value::from(0u8));
-    cv.set_var("layout_mode",  quartz::Value::from(0u8));
-    cv.set_var("min_explorer", quartz::Value::from(MIN_EXPLORER));
+    cv.set_var("ratio_a",        quartz::Value::from(ratio_a));
+    cv.set_var("ratio_b",        quartz::Value::from(ratio_b));
+    cv.set_var("ratio_c",        quartz::Value::from(init_ratio_c));
+    cv.set_var("drag_which",     quartz::Value::from(0u8));
+    cv.set_var("layout_mode",    quartz::Value::from(0u8));
+    cv.set_var("min_explorer",   quartz::Value::from(MIN_EXPLORER));
+    cv.set_var("sidebar_active", quartz::Value::from(SIDEBAR_FILES)); 
 }
