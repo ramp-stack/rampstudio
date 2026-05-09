@@ -1,4 +1,4 @@
-use quartz::{Color, Image};
+use quartz::Image;
 use quartz::ShapeType;
 use crate::preferences::*;
 
@@ -17,6 +17,8 @@ pub const LOGO_H:   f32 = 80.0;
 pub const LOGO_W:   f32 = 80.0;
 pub const LOGO_PAD: f32 = 12.0;
 
+pub const COL_DIVIDER_HOVER: [u8; 4] = [255, 255, 255, 180];
+
 pub struct Panels {
     pub explorer:         (f32, f32, f32, f32),
     pub editor:           (f32, f32, f32, f32),
@@ -28,6 +30,17 @@ pub fn divider_image_v(h: f32) -> Image {
     use image::RgbaImage;
     let mut img = RgbaImage::new(DIV_W as u32, 1);
     img.pixels_mut().for_each(|p| *p = image::Rgba([40, 40, 40, 255]));
+    Image {
+        shape: ShapeType::Rectangle(0.0, (DIV_W, h), 0.0),
+        image: img.into(),
+        color: None,
+    }
+}
+
+pub fn divider_image_v_color(h: f32, rgba: [u8; 4]) -> Image {
+    use image::RgbaImage;
+    let mut img = RgbaImage::new(DIV_W as u32, 1);
+    img.pixels_mut().for_each(|p| *p = image::Rgba(rgba));
     Image {
         shape: ShapeType::Rectangle(0.0, (DIV_W, h), 0.0),
         image: img.into(),

@@ -22,22 +22,21 @@ use terminal::{mount as terminal_mount, run_command};
 pub struct App;
 
 impl App {
-    #[allow(clippy::new_ret_no_self)]
     pub fn new(context: &mut Context) -> Scene {
         let mut scene = Scene::new(context, CanvasMode::Fullscreen, 1);
         let layer_id = LayerId(0);
 
-        let font_bold_b = include_bytes!("../resources/JetBrainsMono-Bold.ttf").to_vec();
-        let font_reg_b  = include_bytes!("../resources/JetBrainsMono-Regular.ttf").to_vec();
-        let font_fa_b   = include_bytes!("../resources/fa-solid-900.ttf").to_vec();
-        let font_ph_b   = include_bytes!("../resources/Phosphor-Light.ttf").to_vec();
+        let font_bold_b     = include_bytes!("../resources/JetBrainsMono-Bold.ttf").to_vec();
+        let font_reg_b      = include_bytes!("../resources/JetBrainsMono-Regular.ttf").to_vec();
+        let font_fa_b       = include_bytes!("../resources/fa-solid-900.ttf").to_vec();
+        let font_ph_b = include_bytes!("../resources/Phosphor-Light.ttf").to_vec();
 
         let theme_bytes = include_bytes!("../resources/cobalt.tmTheme").to_vec();
 
         let code_font   = Arc::new(Font::from_bytes(&font_reg_b).expect("regular font"));
         let gutter_font = Arc::new(Font::from_bytes(&font_bold_b).expect("bold font"));
         let fa_solid    = Arc::new(Font::from_bytes(&font_fa_b).expect("fa solid font"));
-        let ph_light    = Arc::new(Font::from_bytes(&font_ph_b).expect("phosphor light font"));
+        let ph_bold     = Arc::new(Font::from_bytes(&font_ph_b).expect("phosphor light font"));
 
         logic::settings::ensure_file();
 
@@ -71,7 +70,7 @@ impl App {
                 ratio_a,
                 ratio_b,
                 fa_solid.clone(),
-                ph_light.clone(),
+                ph_bold.clone(),
             );
         }
 
@@ -138,7 +137,7 @@ impl App {
             ed.register_callbacks(cv);
         }
 
-        let ph_press = ph_light.clone();
+        let ph_press = ph_bold.clone();
         scene
             .get_layer_mut(layer_id)
             .unwrap()
@@ -165,7 +164,7 @@ impl App {
         let ex_resize       = Arc::new(ex_component.resize);
         let ex_settings_upd = ex_settings_shared.clone();
         let ts_settings_upd = term_settings_shared.clone();
-        let ph_update       = ph_light.clone();
+        let ph_update       = ph_bold.clone();
 
         scene
             .get_layer_mut(layer_id)
@@ -182,9 +181,6 @@ impl App {
 
                 let p = logic::windows_obj::update(cv, &ph_update);
 
-                // Move explorer off-screen when hidden so all its objects
-                // (background, text, rows) disappear without needing to know
-                // each object's name or tag.
                 let ex_x = if p.explorer_visible { p.explorer.0 } else { -9999.0 };
                 {
                     let mut es = ex_settings_upd.get_mut();
