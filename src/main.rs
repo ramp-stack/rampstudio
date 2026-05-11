@@ -2,14 +2,12 @@ fn main() {
     if let Some(path) = std::env::args().nth(1) {
         std::env::set_var("RAMP_PROJECT", path);
     }
-    
-    #[cfg(not(target_arch="wasm32"))]
+
+    #[cfg(not(target_arch = "wasm32"))]
     {
         main::maverick_main()
     }
 }
 
-//hello
 
 
-//

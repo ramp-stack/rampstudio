@@ -5,8 +5,8 @@ pub mod preferences;
 pub mod rampstack;
 
 use crate::constants::*;
-use crate::rampstack::windows::DIV_W;
 use crate::preferences::SIDEBAR_W;
+use crate::rampstack::windows::DIV_W;
 use editor::prelude::{Editor, Settings as EditorSettings};
 use explorer::{mount as explorer_mount, ExplorerSettings};
 use flowmango::LayerId;
@@ -28,16 +28,16 @@ impl App {
         let layer_id = LayerId(0);
 
         let font_bold_b = include_bytes!("../resources/JetBrainsMono-Bold.ttf").to_vec();
-        let font_reg_b  = include_bytes!("../resources/JetBrainsMono-Regular.ttf").to_vec();
-        let font_fa_b   = include_bytes!("../resources/fa-solid-900.ttf").to_vec();
-        let font_ph_b   = include_bytes!("../resources/Phosphor-Light.ttf").to_vec();
-
+        let font_reg_b = include_bytes!("../resources/JetBrainsMono-Regular.ttf").to_vec();
+        let font_fa_b = include_bytes!("../resources/fa-solid-900.ttf").to_vec();
+        let font_ph_b = include_bytes!("../resources/Phosphor-Light.ttf").to_vec();
+        // Pass in theme here.
         let theme_bytes = include_bytes!("../resources/cobalt.tmTheme").to_vec();
 
-        let code_font   = Arc::new(Font::from_bytes(&font_reg_b).expect("regular font"));
+        let code_font = Arc::new(Font::from_bytes(&font_reg_b).expect("regular font"));
         let gutter_font = Arc::new(Font::from_bytes(&font_bold_b).expect("bold font"));
-        let fa_solid    = Arc::new(Font::from_bytes(&font_fa_b).expect("fa solid font"));
-        let ph_light    = Arc::new(Font::from_bytes(&font_ph_b).expect("phosphor light font"));
+        let fa_solid = Arc::new(Font::from_bytes(&font_fa_b).expect("fa solid font"));
+        let ph_light = Arc::new(Font::from_bytes(&font_ph_b).expect("phosphor light font"));
 
         logic::settings::ensure_file();
 
@@ -52,11 +52,11 @@ impl App {
             &mut term_settings_init,
         );
 
-        let ratio_a      = INIT_EXPLORER_RATIO;
-        let ratio_b      = 1.0 - INIT_TERMINAL_RATIO;
+        let ratio_a = INIT_EXPLORER_RATIO;
+        let ratio_b = 1.0 - INIT_TERMINAL_RATIO;
         let init_split_a = (INIT_CW * ratio_a).round();
         let init_split_b = (INIT_CW * ratio_b).round();
-        let panel_top    = preferences::TOPBAR_H + 1.0;
+        let panel_top = preferences::TOPBAR_H + 1.0;
 
         let project_root = rampstack::project::resolve_project_root();
         let initial_file = rampstack::project::pick_initial_file(&project_root)
@@ -119,9 +119,9 @@ impl App {
         term_settings_init.offset_y = panel_top;
         let term_settings_shared = Shared::new(term_settings_init);
 
-        let cwd     = Shared::new(project_root.clone());
+        let cwd = Shared::new(project_root.clone());
         let cwd_cmd = cwd.clone();
-        let _term   = terminal_mount(
+        let _term = terminal_mount(
             context,
             &mut scene,
             layer_id,
@@ -161,11 +161,11 @@ impl App {
                 logic::windows_obj::on_move(cv, mx, my);
             });
 
-        let ed_resize       = ed.clone();
-        let ex_resize       = Arc::new(ex_component.resize);
+        let ed_resize = ed.clone();
+        let ex_resize = Arc::new(ex_component.resize);
         let ex_settings_upd = ex_settings_shared.clone();
         let ts_settings_upd = term_settings_shared.clone();
-        let ph_update       = ph_light.clone();
+        let ph_update = ph_light.clone();
 
         scene
             .get_layer_mut(layer_id)
@@ -185,7 +185,11 @@ impl App {
                 // Move explorer off-screen when hidden so all its objects
                 // (background, text, rows) disappear without needing to know
                 // each object's name or tag.
-                let ex_x = if p.explorer_visible { p.explorer.0 } else { -9999.0 };
+                let ex_x = if p.explorer_visible {
+                    p.explorer.0
+                } else {
+                    -9999.0
+                };
                 {
                     let mut es = ex_settings_upd.get_mut();
                     es.x = ex_x;
@@ -211,3 +215,4 @@ impl App {
 ramp::run! { []; |context: &mut Context| {
     App::new(context)
 }}
+
