@@ -28,5 +28,31 @@
     "move": "#8B2500",
     "true": "#8B2500",
     "false": "#8B2500",
+    "if": "#8B2500",
+    "else": "#8B2500",
+    "for": "#8B2500",
+    "while": "#8B2500",
+    "match": "#8B2500",
+    "loop": "#8B2500",
+    "return": "#8B2500",
+    "break": "#8B2500",
+    "continue": "#8B2500",
+    "string_literal": "#6AAB73",
+    "raw_string_literal": "#6AAB73",
+    "string_content": "#6AAB73",
+    "integer_literal": "#2AACB8",
+    "float_literal": "#2AACB8",
+    "type_identifier": "#4EC9B0",
+    "primitive_type": "#4EC9B0",
+    "lifetime": "#80FFEA",
+    "line_comment": "#6B737D",
+    "block_comment": "#6B737D"
+  },
+  "ui": {
+    "lineno": "#f5f0e8",
+    "lineno_a": "#f5f0e8",
+    "hud": "#f5f0e8",
+    "gutter_bg": "#f5f0e8",
+    "editor_bg": "#f5f0e8"
   }
 }
