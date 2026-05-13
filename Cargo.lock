@@ -999,6 +999,7 @@ dependencies = [
  "image 0.25.10",
  "quartz",
  "ramp2",
+ "serde_json",
  "tokio",
  "tree-sitter",
  "tree-sitter-rust",

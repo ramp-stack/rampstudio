@@ -52,7 +52,7 @@
     "lineno": "#f5f0e8",
     "lineno_a": "#f5f0e8",
     "hud": "#f5f0e8",
-    "gutter_bg": "#f5f0e8",
-    "editor_bg": "#f5f0e8"
+    "gutter_bg": "#000000",
+    "editor_bg": "#000000"
   }
 }

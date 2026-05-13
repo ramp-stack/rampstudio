@@ -32,7 +32,7 @@ impl App {
         let font_fa_b = include_bytes!("../resources/fa-solid-900.ttf").to_vec();
         let font_ph_b = include_bytes!("../resources/Phosphor-Light.ttf").to_vec();
         // Pass in theme here.
-        let theme_bytes = include_bytes!("../resources/cobalt.tmTheme").to_vec();
+        let theme_bytes = include_bytes!("../resources/themes/jbrs.json").to_vec();
 
         let code_font = Arc::new(Font::from_bytes(&font_reg_b).expect("regular font"));
         let gutter_font = Arc::new(Font::from_bytes(&font_bold_b).expect("bold font"));
@@ -215,4 +215,3 @@ impl App {
 ramp::run! { []; |context: &mut Context| {
     App::new(context)
 }}
-
