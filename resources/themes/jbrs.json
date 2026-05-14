@@ -46,7 +46,10 @@
     "primitive_type": "#4EC9B0",
     "lifetime": "#80FFEA",
     "line_comment": "#6B737D",
-    "block_comment": "#6B737D"
+    "block_comment": "#6B737D",
+    "attribute_item": "#fcec03",
+    "attribute": "#fcec03",
+    "function_name": "#34b4eb"
   },
   "ui": {
     "lineno": "#f5f0e8",
