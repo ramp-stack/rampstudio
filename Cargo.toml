@@ -14,6 +14,7 @@ flowmango = { path = "../flowmango"}
 terminal = { path = "../terminal"}
 explorer = { path = "../explorer" }
 editor   = { path = "../editor" }
+window-layout   = { path = "../window-layout" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio = { version = "1.43.0", features = ["rt-multi-thread", "sync", "time", "net"] }

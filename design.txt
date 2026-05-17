@@ -2,267 +2,268 @@
   CONCEPT
 ================================================================================
 
-RampStack is a code editing IDE built on Quartz. It composes three external
+RampStudio is a code editing IDE built on Quartz. It composes three external
 crates — editor, explorer, terminal — into a single fullscreen application
 with a resizable panel layout. Two layout modes are supported: side-by-side
 (explorer | editor | terminal) and stacked (explorer | editor over terminal).
 Panel dividers are draggable. Settings persist to a single settings.json file.
 
+The window layout chrome is handled entirely by the window-layout crate.
+RampStudio constructs a SetupConfig, passes it to window_layout::setup::mount,
+and delegates all mouse handling and per-tick updates to window_layout::logic.
+
 ================================================================================
-  CANVAS VARS
+  FILE STRUCTURE
 ================================================================================
 
-ratio_a       f32   Explorer right edge as a fraction of canvas width.
-ratio_b       f32   Editor right edge as a fraction of canvas width (side-by-side).
-ratio_c       f32   Editor bottom edge as a fraction of panel height (stacked).
-drag_which    u8    0 = none, 1 = dragging divider A, 2 = dragging divider B/C.
-layout_mode   u8    0 = side-by-side, 1 = stacked.
-min_explorer  f32   Minimum explorer width in pixels. Kept in sync with
-                    ExplorerSettings::min_width each tick.
+  src/
+    main.rs                 CLI arg → RAMP_PROJECT, calls maverick_main
+    lib.rs                  Module declarations, App::new, ramp::run!
+    constants.rs            INIT_* layout constants
+    preferences.rs          COL_*, TOPBAR_H, SETTINGS_JSON_PATH
+    settings.rs             load / save / ensure_file (all helpers private)
+    project.rs              resolve_project_root, pick_initial_file
+    window.rs               build_config, thin wrappers over window-layout
+    components/
+      mod.rs
+      editor.rs             EditorComponent
+      explorer.rs           ExplorerComponent
+      terminal.rs           TerminalComponent
+
+================================================================================
+  CANVAS VARS  (written by window-layout, prefixed wl_)
+================================================================================
+
+wl_ratio_a          f32   Explorer right edge as fraction of canvas width.
+wl_ratio_b          f32   Editor right edge as fraction of canvas width (sbs).
+wl_ratio_c          f32   Editor bottom edge as fraction of panel height (stacked).
+wl_drag_which       u8    0 = none, 1 = divider A, 2 = divider B/C.
+wl_layout_mode      u8    0 = side-by-side, 1 = stacked.
+wl_sidebar_active   u8    0 = closed, non-zero = active icon's sidebar_id.
+wl_min_explorer     f32   Minimum explorer width. Synced from ExplorerSettings
+                          each tick by the update loop in lib.rs.
+wl_topbar_h         f32   Topbar height. Set at mount from SetupConfig.
+wl_sidebar_w        f32   Sidebar width. Set at mount from SetupConfig.
+wl_div_a_hover      u8    1 when mouse is hovering divider A.
+wl_div_b_hover      u8    1 when mouse is hovering divider B.
+wl_div_c_hover      u8    1 when mouse is hovering divider C.
+wl_explorer_opening u8    1 while divider A drag is opening the explorer.
 
 ================================================================================
   CONSTANTS  (src/constants.rs)
 ================================================================================
 
-INIT_EXPLORER_RATIO  f32   Initial explorer width as fraction of canvas. 0.18.
-INIT_TERMINAL_RATIO  f32   Initial terminal width as fraction of canvas. 0.28.
-INIT_CW              f32   Initial canvas width used for layout setup. 1920.0.
-INIT_CH              f32   Initial canvas height used for layout setup. 1080.0.
+INIT_EXPLORER_RATIO  f32   0.18   Initial explorer width as fraction of canvas.
+INIT_TERMINAL_RATIO  f32   0.28   Initial terminal width as fraction of canvas.
+INIT_CW              f32   1920.0 Initial canvas width for layout setup.
+INIT_CH              f32   1080.0 Initial canvas height for layout setup.
 
 ================================================================================
   PREFERENCES  (src/preferences.rs)
 ================================================================================
 
-COL_APP_BG         Color   Application background. Black.
-COL_TOPBAR_BG      Color   Topbar background. Black.
-COL_BORDER         Color   Topbar separator and divider colour. White at alpha 80.
-TOPBAR_H           f32     Height of the topbar in pixels. 44.0.
-SETTINGS_JSON_PATH &str    Path to the unified settings file. "settings.json".
+COL_APP_BG           Color   Black.          Application background.
+COL_TOPBAR_BG        Color   Black.          Topbar background.
+COL_BORDER           Color   White alpha 80. Topbar separator / borders.
+TOPBAR_H             f32     44.0            Topbar height in pixels.
+SETTINGS_JSON_PATH   &str    "settings.json" Path to unified settings file.
 
 ================================================================================
-  INTERNAL TYPES  (src/rampstack/)
+  SETTINGS  (src/settings.rs)
 ================================================================================
 
---------------------------------------------------------------------------------
-  rampstack/project.rs
---------------------------------------------------------------------------------
+All serialisation helpers (color_to_hex, parse_hex_color, find_val, get_f,
+get_b, get_us, get_col, serialize_*, parse_*) are private to this module.
 
-resolve_project_root() -> String
-  Reads RAMP_PROJECT env var. Canonicalises to an absolute path if possible.
-  Falls back to "." if the var is unset or empty.
+pub fn ensure_file()
+  Creates settings.json with default values if it does not already exist.
+  Defaults: backspace_deletes_before = true, auto_pairs = true.
 
-pick_initial_file(root) -> Option<String>
-  Searches the project root for a sensible first file to open in the editor.
+pub fn load(ed, ex, term)
+  Reads settings.json. Parses all three sections into the provided structs.
+  Missing keys left at their struct defaults.
+
+pub fn save(ed, ex, term)
+  Writes a single settings.json containing editor, explorer, terminal blocks.
+
+================================================================================
+  PROJECT  (src/project.rs)
+================================================================================
+
+pub fn resolve_project_root() -> String
+  Reads RAMP_PROJECT env var. Canonicalises to absolute path if possible.
+  Falls back to "." if unset or empty.
+
+pub fn pick_initial_file(root: &str) -> Option<String>
   Tries in order: src/main.rs, src/lib.rs, main.rs, lib.rs, README.md,
-  readme.md, index.js, index.ts. Falls back to the first file found by
-  read_dir. Returns None if the root is empty.
-
---------------------------------------------------------------------------------
-  rampstack/settings.rs
---------------------------------------------------------------------------------
-
-Serialization helpers for the unified settings.json that stores editor,
-explorer, and terminal settings in a single file. Used by logic/settings.rs.
-
-  color_to_hex(c) -> String     Formats Color as "#RRGGBB".
-  parse_hex_color(hex) -> Option<Color>
-  find_val(src, key) -> Option<&str>   Extracts a JSON value by key name.
-  get_f / get_b / get_us / get_col     Typed wrappers over find_val.
-
-  serialize_editor(s)   -> String   Produces the "editor" JSON block.
-  parse_editor_into(text, s)         Reads editor fields into an existing struct.
-
-  serialize_explorer(s) -> String   Produces the "explorer" JSON block.
-  parse_explorer_into(text, s)
-
-  serialize_terminal(s) -> String   Produces the "terminal" JSON block.
-  parse_terminal_into(text, s)
-
-  save(ed, ex, term)
-    Writes a single settings.json containing all three sections.
-
-  load(ed, ex, term)
-    Reads settings.json and parses all three sections into the given structs.
-    Missing keys are left at their defaults.
-
-  ensure_file()
-    Creates settings.json with default values if it does not already exist.
-
---------------------------------------------------------------------------------
-  rampstack/windows.rs
---------------------------------------------------------------------------------
-
-Shared types and image helpers for the chrome layout. Used by both
-objects/windows_obj.rs and logic/windows_obj.rs.
-
-  DIV_W      f32   Divider width in pixels. 2.0.
-  HIT_HALF   f32   Half the hit-test zone around a divider. 5.0.
-  MIN_EXPLORER / MIN_EDITOR / MIN_TERMINAL  f32   Minimum panel widths.
-  ICON_SIZE / ICON_PAD / ICON_GAP           f32   Layout-mode icon sizing.
-  LOGO_H / LOGO_W / LOGO_PAD                f32   Logo sizing and offset.
-
-  Panels  (struct)
-    explorer  (f32, f32, f32, f32)   (x, y, w, h) of the explorer panel.
-    editor    (f32, f32, f32, f32)
-    terminal  (f32, f32, f32, f32)
-
-  divider_image_v(h) -> Image   1px-wide vertical divider image.
-  divider_image_h(w) -> Image   1px-tall horizontal divider image.
-  icon_rects(cw) -> [(f32,f32); 2]
-    Returns positions of the two layout-mode icon slots in the topbar.
-  hit(mx, my, x, y, w, h) -> bool   Simple AABB hit test.
+  readme.md, index.js, index.ts. Falls back to first file found by read_dir.
+  Returns None if root is empty.
 
 ================================================================================
-  OBJECTS  (src/objects/)
+  WINDOW  (src/window.rs)
 ================================================================================
 
-Each file has a single pub fn setup(cv: &mut Canvas, ...).
-Construction only — no events, no on_update.
+Re-exports:
+  pub use window_layout::layout::Panels
 
---------------------------------------------------------------------------------
-  objects/windows_obj.rs
---------------------------------------------------------------------------------
+Sidebar icon IDs (non-zero; 0 = SIDEBAR_CLOSED reserved by window-layout):
+  ICON_ID_FILES      u8   1   opens_panel = true
+  ICON_ID_SEARCH     u8   2
+  ICON_ID_USERS      u8   3
+  ICON_ID_TERMINAL   u8   4
+  ICON_ID_GIT        u8   5
+  ICON_ID_EXTENSIONS u8   6
 
-pub fn setup(cv, init_cw, init_ch, ratio_a, ratio_b)
+Sidebar appearance constants (private, consumed only by build_config):
+  SIDEBAR_W                f32     48.0
+  SIDEBAR_ICON_SIZE        f32     28.0
+  SIDEBAR_ICON_TOP         f32     20.0
+  SIDEBAR_ICON_GAP         f32     32.0
+  SIDEBAR_ICON_COLOR       [u8;4]  [255,255,255,90]
+  SIDEBAR_ICON_COLOR_ACTIVE[u8;4]  [255,255,255,255]
+  COL_SIDEBAR_BG           [u8;4]  [0,0,0,255]
 
-Builds all chrome GameObjects and sets all layout canvas vars.
+Phosphor Bold glyph codepoints (private):
+  PH_FILES / PH_SEARCH / PH_USERS / PH_TERMINAL / PH_GIT / PH_EXTENSIONS
 
-  app_bg
-    Full-canvas background fill. COL_APP_BG. layer -1.
+pub fn build_config(icon_font: Arc<Font>) -> SetupConfig
+  Constructs a SetupConfig from the constants above and preferences.
+  Sets sidebar_icons vec with all six icons.
+  initial_active = ICON_ID_FILES.
 
-  topbar_bg
-    Topbar background fill. COL_TOPBAR_BG. layer 5.
-
-  topbar_sep
-    1px horizontal separator below topbar. COL_BORDER. layer 6.
-
-  topbar_logo
-    Logo image from resources/rampstacklogo.png. layer 7. Decorative only.
-
-  icon_stacked / icon_sidebyside
-    Layout-mode toggle icons, right side of topbar. layer 7.
-    Default: side-by-side selected (icon_sidebyside starts as selected).
-
-  divider_a
-    Vertical divider between explorer and editor. layer 10.
-
-  divider_b
-    Vertical divider between editor and terminal. Visible in side-by-side mode.
-    layer 10.
-
-  divider_c
-    Horizontal divider between editor and terminal. Visible in stacked mode.
-    Starts hidden (visible = false). layer 10.
-
-  Canvas vars set here:
-    ratio_a, ratio_b, ratio_c, drag_which, layout_mode, min_explorer
+pub fn setup(cv, cw, ch, cfg)        → window_layout::setup::mount
+pub fn handle_press(cv, mx, my, cfg) → window_layout::logic::on_press
+pub fn handle_release(cv)            → window_layout::logic::on_release
+pub fn handle_move(cv, mx, my)       → window_layout::logic::on_move
+pub fn tick(cv, cfg) -> Panels       → window_layout::logic::update
 
 ================================================================================
-  LOGIC  (src/logic/)
+  COMPONENTS  (src/components/)
 ================================================================================
 
 --------------------------------------------------------------------------------
-  logic/windows_obj.rs
+  components/editor.rs
 --------------------------------------------------------------------------------
 
-Handles mouse interaction with dividers and layout-mode icons, and the per-tick
-update that repositions all chrome objects and returns panel bounds.
+#[derive(Clone)]
+pub struct EditorComponent { inner: Arc<Editor> }
 
-  on_press(cv, mx, my) -> bool
-    If click is in topbar: checks icon hit tests, sets layout_mode, swaps
-    icon images, clears drag_which.
-    If click is on divider A hit zone: sets drag_which = 1.
-    If click is on divider B (mode 0) or C (mode 1) hit zone: sets drag_which = 2.
-    Returns true if a drag was started or a mode button was pressed.
+  EditorComponent::new(x, y, w, h, code_font, gutter_font,
+                       initial_file, theme_bytes, settings) -> Self
+    Wraps Editor::new in Arc.
 
-  on_release(cv)
-    Clears drag_which to 0.
+  fn mount(&self, cv)
+    Calls inner.mount(cv) and inner.register_callbacks(cv).
 
-  on_move(cv, mx, my)
-    If drag_which == 0: no-op.
-    If drag_which == 1: updates ratio_a, clamped between min_explorer and
-      (ratio_b - editor_min) in side-by-side, or (1 - editor_min) in stacked.
-    If drag_which == 2, mode 0: updates ratio_b, clamped between
-      (ratio_a + editor_min) and (1 - terminal_min).
-    If drag_which == 2, mode 1: updates ratio_c, clamped between
-      editor_min and (1 - terminal_min / panel_h).
+  fn set_bounds(&self, x, y, w, h)
+    Delegates to inner.set_bounds.
 
-  update(cv) -> Panels
-    Called every tick from lib.rs on_update.
-    Clamps ratio_b, then clamps ratio_a based on clamped ratio_b.
-    Resizes app_bg, topbar_bg, topbar_sep if canvas size changed.
-    Repositions layout icons.
-    Repositions and resizes divider_a.
-    In side-by-side mode:
-      Shows divider_b at ratio_b position.
-      Hides divider_c.
-      Returns Panels with three side-by-side regions.
-    In stacked mode:
-      Hides divider_b.
-      Shows divider_c at ratio_c height.
-      Returns Panels with explorer full-height, editor top-right, terminal bottom-right.
+  fn open_file_callback(&self) -> impl Fn(&str) + 'static
+    Returns a closure that calls inner.open_file. Used when wiring the
+    explorer on_file_open callback without moving EditorComponent.
 
 --------------------------------------------------------------------------------
-  logic/settings.rs  (standalone — no matching object)
+  components/explorer.rs
 --------------------------------------------------------------------------------
 
-Thin wrappers over rampstack::settings. Called from lib.rs during init.
+#[derive(Clone)]
+pub struct ExplorerComponent {
+    pub settings: Shared<ExplorerSettings>,
+    resize_fn:    Arc<dyn Fn(&mut Canvas, f32, f32, f32, f32)>,
+}
 
-  ensure_file()   Creates settings.json if missing.
-  load(ed, ex, term)   Reads and parses settings.json into the given structs.
-  save(ed, ex, term)   Writes all three sections to settings.json.
+  ExplorerComponent::new(context, scene, layer_id,
+                         font_bold_b, font_reg_b, font_fa_b,
+                         settings, on_file_open) -> Self
+    Calls explorer::mount, stores component.resize as Arc<dyn Fn>.
+    Arc (not Box) used so the struct can derive Clone.
+
+  fn resize(&self, cv, x, y, w, h)
+    Calls resize_fn.
+
+--------------------------------------------------------------------------------
+  components/terminal.rs
+--------------------------------------------------------------------------------
+
+pub struct TerminalComponent { pub settings: Shared<TermSettings> }
+
+  TerminalComponent::new(context, scene, layer_id, font_reg_b,
+                         settings, cwd: Shared<String>) -> Self
+    Calls terminal::mount with run_command callback bound to cwd.
 
 ================================================================================
   LIB  (src/lib.rs)
 ================================================================================
 
-Module declarations and App struct. ramp::run! at the bottom.
+Modules declared: constants, preferences, settings, project, window, components.
 
-  App::new(context, assets) -> Scene
+App::new(context) -> Scene
 
-    Font loading
-      JetBrainsMono-Bold.ttf     gutter font
-      JetBrainsMono-Regular.ttf  code font and terminal font
-      fa-solid-900.ttf           icon font for explorer
+  Fonts
+    font_bold_b   JetBrainsMono-Bold.ttf      → gutter_font
+    font_reg_b    JetBrainsMono-Regular.ttf   → code_font, terminal font
+    font_fa_b     fa-solid-900.ttf            → explorer icon font
+    font_ph_b     Phosphor-Light.ttf          → sidebar icon font (ph_font)
 
-    Theme loading
-      Tries resources/cobalt.tmTheme, falls back to resources/dark-rust.tmTheme.
+  Theme
+    Include cobalt.tmTheme. Fall back to dark-rust.tmTheme if not present.
 
-    Settings
-      logic::settings::ensure_file()
-      logic::settings::load() into EditorSettings, ExplorerSettings, TermSettings.
+  Settings
+    settings::ensure_file()
+    settings::load() → ed_settings, ex_settings, term_settings
+    ed_settings: backspace_deletes_before = true, auto_pairs = true
 
-    Layout
-      Computes init_split_a, init_split_b, panel_top from constants and ratios.
-      Resolves project_root and initial_file via rampstack::project.
+  Layout
+    panel_top    = TOPBAR_H + 1.0
+    init_split_a = (INIT_CW * INIT_EXPLORER_RATIO).round()
+    init_split_b = (INIT_CW * (1.0 - INIT_TERMINAL_RATIO)).round()
 
-    Chrome
-      objects::windows_obj::setup — builds all chrome objects and canvas vars.
+  Project
+    project_root = project::resolve_project_root()
+    initial_file = project::pick_initial_file(&project_root) or "code.txt"
 
-    Editor
-      Editor::new with computed bounds and loaded settings.
-      ed.mount(cv) + ed.register_callbacks(cv).
+  Window layout
+    wl_cfg = Arc::new(window::build_config(ph_font))
+    window::setup(cv, INIT_CW, INIT_CH, &wl_cfg)
 
-    Explorer
-      Configures ex_settings with position, size, project_root.
-      Calls explorer::mount, captures ExplorerComponent.
-      Writes min_explorer canvas var from ExplorerSettings::min_width.
+  Editor
+    EditorComponent::new(init_split_a + DIV_W, panel_top,
+                         init_split_b - init_split_a - DIV_W,
+                         INIT_CH - panel_top,
+                         code_font, gutter_font,
+                         &initial_file, &theme_bytes, ed_settings)
+    editor.mount(cv)
 
-    Terminal
-      Configures term_settings with offset_x, offset_y.
-      Calls terminal::mount with run_command callback and cwd Shared<String>.
+  Explorer
+    ex_settings.x            = wl_cfg.sidebar_w
+    ex_settings.y            = panel_top
+    ex_settings.w            = init_split_a - wl_cfg.sidebar_w
+    ex_settings.project_root = project_root.clone()
+    ex_settings_shared       = Shared::new(ex_settings)
+    ExplorerComponent::new(..., ex_settings_shared, editor.open_file_callback())
+    cv.set_var("wl_min_explorer", ex_settings_shared.get().min_width)
 
-    Input handlers
-      on_mouse_press  → logic::windows_obj::on_press
-      on_mouse_release → logic::windows_obj::on_release
-      on_mouse_move   → logic::windows_obj::on_move
+  Terminal
+    term_settings.offset_x = init_split_b + DIV_W
+    term_settings.offset_y = panel_top
+    TerminalComponent::new(..., Shared::new(term_settings), Shared::new(project_root))
 
-    Update loop
-      Syncs min_explorer canvas var from ExplorerSettings::min_width.
-      Calls logic::windows_obj::update to get Panels.
-      Passes panel bounds to ex_resize, ed.set_bounds, ts.offset_x/y.
+  Input handlers
+    on_mouse_press   → window::handle_press(cv, mx, my, &cfg)
+    on_mouse_release → window::handle_release(cv)
+    on_mouse_move    → window::handle_move(cv, mx, my)
 
-  ramp::run! passes context and assets into App::new.
+  Update loop
+    Sync wl_min_explorer from ex_share.get().min_width each tick.
+    p = window::tick(cv, &cfg)
+    ex_x = if p.explorer_visible { p.explorer.0 } else { -9999.0 }
+    Update ex_share: x = ex_x, y = p.explorer.1, w = p.explorer.2
+    explorer.resize(cv, ex_x, p.explorer.1, p.explorer.2, p.explorer.3)
+    editor.set_bounds(p.editor.0, p.editor.1, p.editor.2, p.editor.3)
+    Update ts_share: offset_x = p.terminal.0, offset_y = p.terminal.1 + TAB_H
+    cv.set_var("_term_panel_y", p.terminal.1)
+
+  ramp::run! { []; |context| App::new(context) }
 
 ================================================================================
   MAIN  (src/main.rs)
@@ -270,20 +271,41 @@ Module declarations and App struct. ramp::run! at the bottom.
 
 Always exactly this. Never changes between projects.
 
-  Reads first CLI argument and sets RAMP_PROJECT env var.
-  Calls main::maverick_main() under the wasm32 cfg gate.
+  #[cfg(not(target_arch = "wasm32"))]
+  fn main() {
+      if let Some(path) = std::env::args().nth(1) {
+          std::env::set_var("RAMP_PROJECT", path);
+      }
+      main::maverick_main();
+  }
 
 ================================================================================
   RESOURCES
 ================================================================================
 
-  resources/cobalt.tmTheme or dark-rust.tmTheme   Syntax theme for editor.
-  resources/rampstacklogo.png                     Topbar logo (decorative).
-  resources/selected_sidebyside.png               Layout icon — selected state.
-  resources/unselected_sidebyside.png             Layout icon — unselected state.
-  resources/selected_stacked.png                  Layout icon — selected state.
-  resources/unselected_stacked.png                Layout icon — unselected state.
-  resources/JetBrainsMono-Bold.ttf                Gutter and explorer bold font.
-  resources/JetBrainsMono-Regular.ttf             Code and terminal font.
-  resources/fa-solid-900.ttf                      FontAwesome for explorer icons.
-  settings.json  (written at runtime)             Persisted user settings.
+  resources/cobalt.tmTheme            Syntax theme (primary).
+  resources/dark-rust.tmTheme         Syntax theme (fallback).
+  resources/rampstacklogo.png         Topbar logo (decorative).
+  resources/selected_sidebyside.png   Layout icon — selected state.
+  resources/unselected_sidebyside.png Layout icon — unselected state.
+  resources/selected_stacked.png      Layout icon — selected state.
+  resources/unselected_stacked.png    Layout icon — unselected state.
+  resources/JetBrainsMono-Bold.ttf    Gutter and explorer bold font.
+  resources/JetBrainsMono-Regular.ttf Code and terminal font.
+  resources/fa-solid-900.ttf          FontAwesome for explorer icons.
+  resources/Phosphor-Light.ttf        Phosphor for sidebar icons.
+  settings.json  (written at runtime) Persisted user settings.
+
+================================================================================
+  DEPENDENCIES  (Cargo.toml)
+================================================================================
+
+  image         = "0.25"
+  ramp          = { package = "ramp2",    path = "../ramp" }
+  quartz        = { path = "../quartz" }
+  flowmango     = { path = "../flowmango" }
+  terminal      = { path = "../terminal" }
+  explorer      = { path = "../explorer" }
+  editor        = { path = "../editor" }
+  window-layout = { path = "../window-layout" }
+  tokio (non-wasm only) = { version = "1.43.0", features = [...] }
