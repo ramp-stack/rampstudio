@@ -52,10 +52,10 @@
     "function_name": "#34b4eb"
   },
   "ui": {
-    "editor_bg": "#000000"
+    "editor_bg": "#000000",
     "gutter_bg": "#000000",
     "hud": "#f5f0e8",
     "lineno": "#f5f0e8",
-    "lineno_a": "#f5f0e8",
+    "lineno_a": "#f5f0e8"
   }
 }
