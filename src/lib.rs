@@ -42,9 +42,7 @@ impl App {
         let gutter_font = Arc::new(Font::from_bytes(&font_bold_b).expect("bold font"));
         let ph_font = Arc::new(Font::from_bytes(&font_ph_b).expect("phosphor font"));
 
-        let fallback_bytes = include_bytes!("../resources/themes/theme.json").to_vec();
-        let theme_bytes: Vec<u8> =
-            std::fs::read("resources/themes/jbrs.json").unwrap_or(fallback_bytes);
+        let theme_bytes: Vec<u8> = include_bytes!("../resources/themes/jbrs.json").to_vec();
         let app_theme = theme::AppTheme::from_bytes(theme_bytes);
 
         settings::ensure_file();
