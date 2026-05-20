@@ -25,6 +25,7 @@ use window_layout::constants::DIV_W;
 pub struct App;
 
 impl App {
+    #[allow(clippy::new_ret_no_self)]
     pub fn new(context: &mut Context) -> Scene {
         let mut scene = Scene::new(context, CanvasMode::Fullscreen, 1);
         let layer_id = LayerId(0);
