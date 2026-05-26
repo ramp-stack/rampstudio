@@ -2,7 +2,7 @@
     "chrome": {
         "app_bg": "#1a1b26",
         "topbar_bg": "#1a1b26",
-        "sidebar_bg": "#1a1b26",
+        "sidebar_bg": "#1f2335",
         "border": "#2a2b3d",
         "sidebar_icon": "#565f89",
         "sidebar_icon_active": "#c0caf5",
@@ -13,14 +13,14 @@
     "explorer": {
         "bg": "#1a1b26",
         "text": "#c0caf5",
-        "file": "#565f89",
+        "file": "#a9b1d6",
         "crumb": "#3b3d57",
         "folder_icon": "#7aa2f7",
         "guide": "#2a2b3d"
     },
     "syntax": {
-        "default": "#a9b1d6",
-        "use": "#565f89",
+        "default": "#c0caf5",
+        "use": "#bb9af7",
         "fn": "#7aa2f7",
         "let": "#bb9af7",
         "mut": "#f7768e",
@@ -34,8 +34,8 @@
         "const": "#bb9af7",
         "static": "#bb9af7",
         "extern": "#bb9af7",
-        "crate": "#565f89",
-        "super": "#565f89",
+        "crate": "#ff9e64",
+        "super": "#ff9e64",
         "where": "#bb9af7",
         "as": "#bb9af7",
         "in": "#bb9af7",
@@ -64,8 +64,11 @@
         "type_identifier": "#e0af68",
         "primitive_type": "#e0af68",
         "lifetime": "#f7768e",
-        "line_comment": "#3b3d57",
-        "block_comment": "#3b3d57"
+        "line_comment": "#565f89",
+        "block_comment": "#565f89",
+        "attribute": "#ff9e64",
+        "attribute_item": "#ff9e64",
+        "function_name": "#7aa2f7"
     },
     "ui": {
         "lineno": "#3b3d57",

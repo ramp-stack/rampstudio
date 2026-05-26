@@ -22,6 +22,27 @@ use ramp::prism::Context;
 use terminal::preferences::TermSettings;
 use window_layout::constants::DIV_W;
 
+// ── Cursor hotspot ────────────────────────────────────────────────────────────
+// The window system reports the cursor centre as (mx, my).  The visible tip of
+// a standard arrow cursor is near the top-left of the cursor bitmap, not the
+// centre.  Apply these offsets so hit-testing and drag handles register at the
+// tip rather than the middle of the cursor image.
+//
+// Most native window backends (winit/macOS/Windows) report the cursor hotspot
+// that was registered with the OS, which for the default arrow is (0, 0) —
+// i.e. the *actual* top-left pixel.  If your cursor appears to register at
+// its visual centre instead of the tip, set these to half the cursor image
+// dimensions (negative), e.g. (-7.0, -7.0) for a 14×14 cursor.
+//
+// Set both to 0.0 if the default OS cursor is used (most common case).
+const CURSOR_HOT_X: f32 = 0.0;
+const CURSOR_HOT_Y: f32 = 0.0;
+
+#[inline(always)]
+fn fix_cursor(mx: f32, my: f32) -> (f32, f32) {
+    (mx + CURSOR_HOT_X, my + CURSOR_HOT_Y)
+}
+
 pub struct App;
 
 impl App {
@@ -169,7 +190,6 @@ impl App {
             p
         };
 
-        // Last query we ran search on — avoid re-scanning on every tick
         let last_search_query: Shared<String> = Shared::new(String::new());
         let prev_sidebar: Shared<u8> = Shared::new(ICON_ID_FILES);
 
@@ -199,6 +219,9 @@ impl App {
             .unwrap()
             .canvas_mut()
             .on_mouse_press(move |cv, _btn, (mx, my)| {
+                // Apply cursor hotspot correction so the tip of the arrow cursor
+                // is what registers, not the cursor centre.
+                let (mx, my) = fix_cursor(mx, my);
                 window::handle_press(cv, mx, my, &cfg_press);
                 let (ex, ey, ew, eh) = ed_press.bounds();
                 let in_editor = mx >= ex && mx <= ex + ew && my >= ey && my <= ey + eh;
@@ -221,6 +244,9 @@ impl App {
             .unwrap()
             .canvas_mut()
             .on_mouse_move(move |cv, (mx, my)| {
+                // Apply the same hotspot correction on move so hover detection
+                // and drag tracking both register at the cursor tip.
+                let (mx, my) = fix_cursor(mx, my);
                 window::handle_move(cv, mx, my);
             });
 
@@ -248,6 +274,9 @@ impl App {
 
                 let min_w = ex_share.get().min_width;
                 cv.set_var("wl_min_explorer", quartz::Value::from(min_w));
+
+                // Read drag state BEFORE tick so we can gate expensive work below.
+                let is_dragging = cv.get_u8("wl_drag_which") != 0;
 
                 let p = window::tick(cv, &cfg_upd);
                 let sidebar_now = cv.get_u8("wl_sidebar_active");
@@ -303,15 +332,19 @@ impl App {
                         x if x == ICON_ID_SEARCH => {
                             search_panel.resize(cv, px, py, pw, ph);
 
-                            let q = search_panel.query.get().clone();
-                            if q != *last_q_u.get() {
-                                *last_q_u.get_mut() = q.clone();
-                                let files = collect_project_files(&pr_upd, 300);
-                                let file_refs: Vec<(&str, &str)> = files
-                                    .iter()
-                                    .map(|(p, c)| (p.as_str(), c.as_str()))
-                                    .collect();
-                                search_panel.run_search(&q, &file_refs);
+                            // Guard file scan behind drag state — scanning 300 files
+                            // per frame while dragging a divider kills frame time.
+                            if !is_dragging {
+                                let q = search_panel.query.get().clone();
+                                if q != *last_q_u.get() {
+                                    *last_q_u.get_mut() = q.clone();
+                                    let files = collect_project_files(&pr_upd, 300);
+                                    let file_refs: Vec<(&str, &str)> = files
+                                        .iter()
+                                        .map(|(p, c)| (p.as_str(), c.as_str()))
+                                        .collect();
+                                    search_panel.run_search(&q, &file_refs);
+                                }
                             }
 
                             search_panel.update(cv);
@@ -455,4 +488,3 @@ fn is_text_file(path: &std::path::Path) -> bool {
 ramp::run! { []; |context: &mut Context| {
     App::new(context)
 }}
-

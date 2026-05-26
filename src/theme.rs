@@ -1,5 +1,3 @@
-// src/theme.rs — Single theme.json controls chrome, explorer, syntax, and ui.
-
 pub struct ChromeTheme {
     pub app_bg:              [u8; 4],
     pub topbar_bg:           [u8; 4],
@@ -53,7 +51,6 @@ impl Default for ExplorerTheme {
 pub struct AppTheme {
     pub chrome:   ChromeTheme,
     pub explorer: ExplorerTheme,
-    /// Full bytes passed to EditorComponent — editor reads "syntax" + "ui" from this.
     pub raw_bytes: Vec<u8>,
 }
 
@@ -64,8 +61,6 @@ impl AppTheme {
         Self { chrome, explorer, raw_bytes: bytes }
     }
 }
-
-// ── Parser ────────────────────────────────────────────────────────────────────
 
 fn parse_chrome(bytes: &[u8]) -> Option<ChromeTheme> {
     let s = std::str::from_utf8(bytes).ok()?;
