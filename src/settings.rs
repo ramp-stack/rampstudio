@@ -130,85 +130,19 @@ fn parse_editor(t: &str, s: &mut EditorSettings) {
 fn serialize_explorer(s: &ExplorerSettings) -> String {
     format!(
         r#"  "explorer": {{
-    "row_height":       {:.1},
-    "indent":           {:.1},
-    "pad_left":         {:.1},
-    "arrow_pad":        {:.1},
-    "arrow_size":       {:.1},
-    "chevron_w":        {:.1},
-    "min_width":        {:.1},
-    "max_depth":        {},
-    "font_size":        {:.1},
-    "file_label_size":        {:.1},
-    "char_w_folder":    {:.2},
-    "char_w_file":      {:.2},
-    "scroll_speed":     {:.2},
-    "scroll_speed_max": {:.1},
-    "max_slots":        {}
+    "folder_label_font_size":              {:.1},
+    "file_label_font_size":                     {:.1},
   }}"#,
-        s.row_height,
-        s.indent,
-        s.pad_left,
-        s.arrow_pad,
-        s.arrow_size,
-        s.chevron_w,
-        s.min_width,
-        s.max_depth,
-        s.font_size,
-        s.file_label_size,
-        s.char_w_folder,
-        s.char_w_file,
-        s.scroll_speed,
-        s.scroll_speed_max,
-        s.max_slots,
+        s.folder_label_font_size, s.file_label_font_size,
     )
 }
 
 fn parse_explorer(t: &str, s: &mut ExplorerSettings) {
-    if let Some(v) = get_f(t, "row_height") {
-        s.row_height = v;
-    }
-    if let Some(v) = get_f(t, "indent") {
-        s.indent = v;
-    }
-    if let Some(v) = get_f(t, "pad_left") {
-        s.pad_left = v;
-    }
-    if let Some(v) = get_f(t, "arrow_pad") {
-        s.arrow_pad = v;
-    }
-    if let Some(v) = get_f(t, "arrow_size") {
-        s.arrow_size = v;
-    }
-    if let Some(v) = get_f(t, "chevron_w") {
-        s.chevron_w = v;
-    }
-    if let Some(v) = get_f(t, "min_width") {
-        s.min_width = v;
-    }
-    if let Some(v) = get_us(t, "max_depth") {
-        s.max_depth = v;
-    }
-    if let Some(v) = get_f(t, "font_size") {
-        s.font_size = v;
+    if let Some(v) = get_f(t, "folder_label_font_size") {
+        s.folder_label_font_size = v;
     }
     if let Some(v) = get_f(t, "file_label_size") {
-        s.file_label_size = v;
-    }
-    if let Some(v) = get_f(t, "char_w_folder") {
-        s.char_w_folder = v;
-    }
-    if let Some(v) = get_f(t, "char_w_file") {
-        s.char_w_file = v;
-    }
-    if let Some(v) = get_f(t, "scroll_speed") {
-        s.scroll_speed = v;
-    }
-    if let Some(v) = get_f(t, "scroll_speed_max") {
-        s.scroll_speed_max = v;
-    }
-    if let Some(v) = get_us(t, "max_slots") {
-        s.max_slots = v;
+        s.file_label_font_size = v;
     }
 }
 
