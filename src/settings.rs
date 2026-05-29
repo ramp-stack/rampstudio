@@ -1,4 +1,4 @@
-use crate::preferences::SETTINGS_JSON_PATH;
+use crate::preferences::SETTINGS_FILENAME;
 use editor::prelude::Settings as EditorSettings;
 use explorer::ExplorerSettings;
 use quartz::Color;
@@ -217,11 +217,11 @@ pub fn save(ed: &EditorSettings, ex: &ExplorerSettings, term: &TermSettings) {
         serialize_explorer(ex),
         serialize_terminal(term)
     );
-    let _ = std::fs::write(SETTINGS_JSON_PATH, json);
+    let _ = std::fs::write(SETTINGS_FILENAME, json);
 }
 
 pub fn load(ed: &mut EditorSettings, ex: &mut ExplorerSettings, term: &mut TermSettings) {
-    if let Ok(txt) = std::fs::read_to_string(SETTINGS_JSON_PATH) {
+    if let Ok(txt) = std::fs::read_to_string(SETTINGS_FILENAME) {
         parse_editor(&txt, ed);
         parse_explorer(&txt, ex);
         parse_terminal(&txt, term);
@@ -229,11 +229,10 @@ pub fn load(ed: &mut EditorSettings, ex: &mut ExplorerSettings, term: &mut TermS
 }
 
 pub fn ensure_file() {
-    if !std::path::Path::new(SETTINGS_JSON_PATH).exists() {
+    if !std::path::Path::new(SETTINGS_FILENAME).exists() {
         let mut ed = EditorSettings::default();
         ed.backspace_deletes_before = true;
         ed.auto_pairs = true;
         save(&ed, &ExplorerSettings::default(), &TermSettings::default());
     }
 }
-

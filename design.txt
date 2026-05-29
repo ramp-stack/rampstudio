@@ -20,7 +20,7 @@ and delegates all mouse handling and per-tick updates to window_layout::logic.
     main.rs                 CLI arg → RAMP_PROJECT, calls maverick_main
     lib.rs                  Module declarations, App::new, ramp::run!
     constants.rs            INIT_* layout constants
-    preferences.rs          COL_*, TOPBAR_H, SETTINGS_JSON_PATH
+    preferences.rs          COL_*, TOPBAR_H, SETTINGS_FILENAME
     settings.rs             load / save / ensure_file (all helpers private)
     project.rs              resolve_project_root, pick_initial_file
     window.rs               build_config, thin wrappers over window-layout
@@ -66,7 +66,7 @@ COL_APP_BG           Color   Black.          Application background.
 COL_TOPBAR_BG        Color   Black.          Topbar background.
 COL_BORDER           Color   White alpha 80. Topbar separator / borders.
 TOPBAR_H             f32     44.0            Topbar height in pixels.
-SETTINGS_JSON_PATH   &str    "settings.json" Path to unified settings file.
+SETTINGS_FILENAME   &str    "settings.json"
 
 ================================================================================
   SETTINGS  (src/settings.rs)
