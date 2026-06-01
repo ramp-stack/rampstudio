@@ -95,59 +95,14 @@ fn serialize_terminal(s: &TermSettings) -> String {
     format!(
         r#"  "terminal": {{
     "font_size":   {:.1},
-    "line_height": {:.3},
-    "pad_x":       {:.1},
-    "pad_y":       {:.1},
-    "scrollback":  {},
-    "col_text":    "{}",
-    "col_prompt":  "{}",
-    "col_input":   "{}",
-    "col_cursor":  "{}",
-    "col_error":   "{}"
   }}"#,
         s.font_size,
-        s.line_height,
-        s.pad_x,
-        s.pad_y,
-        s.scrollback,
-        color_to_hex(s.col_text),
-        color_to_hex(s.col_prompt),
-        color_to_hex(s.col_input),
-        color_to_hex(s.col_cursor),
-        color_to_hex(s.col_error),
     )
 }
 
 fn parse_terminal(t: &str, s: &mut TermSettings) {
     if let Some(v) = get_f(t, "font_size") {
         s.font_size = v;
-    }
-    if let Some(v) = get_f(t, "line_height") {
-        s.line_height = v;
-    }
-    if let Some(v) = get_f(t, "pad_x") {
-        s.pad_x = v;
-    }
-    if let Some(v) = get_f(t, "pad_y") {
-        s.pad_y = v;
-    }
-    if let Some(v) = get_us(t, "scrollback") {
-        s.scrollback = v;
-    }
-    if let Some(v) = get_col(t, "col_text") {
-        s.col_text = v;
-    }
-    if let Some(v) = get_col(t, "col_prompt") {
-        s.col_prompt = v;
-    }
-    if let Some(v) = get_col(t, "col_input") {
-        s.col_input = v;
-    }
-    if let Some(v) = get_col(t, "col_cursor") {
-        s.col_cursor = v;
-    }
-    if let Some(v) = get_col(t, "col_error") {
-        s.col_error = v;
     }
 }
 
