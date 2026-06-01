@@ -130,19 +130,15 @@ fn parse_editor(t: &str, s: &mut EditorSettings) {
 fn serialize_explorer(s: &ExplorerSettings) -> String {
     format!(
         r#"  "explorer": {{
-    "folder_label_font_size":              {:.1},
-    "file_label_font_size":                     {:.1},
+    "font_size":                     {:.1},
   }}"#,
-        s.folder_label_font_size, s.file_label_font_size,
+        s.font_size,
     )
 }
 
 fn parse_explorer(t: &str, s: &mut ExplorerSettings) {
-    if let Some(v) = get_f(t, "folder_label_font_size") {
-        s.folder_label_font_size = v;
-    }
-    if let Some(v) = get_f(t, "file_label_font_size") {
-        s.file_label_font_size = v;
+    if let Some(v) = get_f(t, "font_size") {
+        s.font_size = v;
     }
 }
 
