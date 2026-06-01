@@ -141,7 +141,7 @@ fn parse_explorer(t: &str, s: &mut ExplorerSettings) {
     if let Some(v) = get_f(t, "folder_label_font_size") {
         s.folder_label_font_size = v;
     }
-    if let Some(v) = get_f(t, "file_label_size") {
+    if let Some(v) = get_f(t, "file_label_font_size") {
         s.file_label_font_size = v;
     }
 }
@@ -228,6 +228,7 @@ pub fn load(ed: &mut EditorSettings, ex: &mut ExplorerSettings, term: &mut TermS
     }
 }
 
+// Creates SETTINGS_FILENAME if it doesn't exist.
 pub fn ensure_file() {
     if !std::path::Path::new(SETTINGS_FILENAME).exists() {
         let mut ed = EditorSettings::default();
