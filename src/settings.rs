@@ -49,70 +49,17 @@ fn serialize_editor(s: &EditorSettings) -> String {
     format!(
         r#"  "editor": {{
     "font_size":                {:.2},
-    "line_height_mul":          {:.3},
-    "char_width_mul":           {:.4},
-    "text_x":                   {:.1},
-    "text_y":                   {:.1},
-    "gutter_w":                 {:.1},
-    "backspace_deletes_before": {},
-    "cursor_blink":             {},
-    "auto_pairs":               {},
-    "border_thickness":         {:.1},
-    "border_padding":           {:.1},
     "scroll_accel":             {:.2},
     "scroll_friction":          {:.3},
     "scroll_max":               {:.1}
   }}"#,
-        s.font_size,
-        s.line_height_mul,
-        s.char_width_mul,
-        s.text_x,
-        s.text_y,
-        s.gutter_w,
-        s.backspace_deletes_before,
-        s.cursor_blink,
-        s.auto_pairs,
-        s.border_thickness,
-        s.border_padding,
-        s.scroll_accel,
-        s.scroll_friction,
-        s.scroll_max,
+        s.font_size, s.scroll_accel, s.scroll_friction, s.scroll_max,
     )
 }
 
 fn parse_editor(t: &str, s: &mut EditorSettings) {
     if let Some(v) = get_f(t, "font_size") {
         s.font_size = v;
-    }
-    if let Some(v) = get_f(t, "line_height_mul") {
-        s.line_height_mul = v;
-    }
-    if let Some(v) = get_f(t, "char_width_mul") {
-        s.char_width_mul = v;
-    }
-    if let Some(v) = get_f(t, "text_x") {
-        s.text_x = v;
-    }
-    if let Some(v) = get_f(t, "text_y") {
-        s.text_y = v;
-    }
-    if let Some(v) = get_f(t, "gutter_w") {
-        s.gutter_w = v;
-    }
-    if let Some(v) = get_b(t, "backspace_deletes_before") {
-        s.backspace_deletes_before = v;
-    }
-    if let Some(v) = get_b(t, "cursor_blink") {
-        s.cursor_blink = v;
-    }
-    if let Some(v) = get_b(t, "auto_pairs") {
-        s.auto_pairs = v;
-    }
-    if let Some(v) = get_f(t, "border_thickness") {
-        s.border_thickness = v;
-    }
-    if let Some(v) = get_f(t, "border_padding") {
-        s.border_padding = v;
     }
     if let Some(v) = get_f(t, "scroll_accel") {
         s.scroll_accel = v;
