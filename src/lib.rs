@@ -144,7 +144,7 @@ impl App {
             font_fa_b,
             ex_settings_shared.clone(),
             Box::new(move |path: &str| {
-                ed_for_open.open_file(path);
+                ed_for_open.lock().unwrap().open_file(path);
                 *ef_for_open.get_mut() = true;
                 *tf_for_open.get_mut() = false;
                 *cf_for_open.get_mut() = path.to_string();
